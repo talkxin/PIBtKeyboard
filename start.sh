@@ -18,7 +18,7 @@ __restartDaemon(){
 __restartDaemon
 
 cd ${__HOME}/service/
-python service.py
+python service.py &
 
 cd ${__HOME}/client/
 python client.py
