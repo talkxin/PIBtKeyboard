@@ -1,6 +1,6 @@
 #!/bin/bash
 
-__HOME=${HOME}/PIBtKeyboard/
+__HOME=/home/pi/PIBtKeyboard/
 
 #start Bluetooth daemon
 __restartDaemon(){
