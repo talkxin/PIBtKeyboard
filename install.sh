@@ -12,7 +12,7 @@
 
 DBUS_NAME=org.btservice.keyboard.conf
 
-__HOME=/opt/PIBtKeyboard/
+__HOME=/${HOME}/PIBtKeyboard/
 __BLUETOOTH_CONF=/etc/bluetooth/main.conf 
 
 #realy software

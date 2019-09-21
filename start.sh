@@ -15,12 +15,15 @@ __restartDaemon(){
     bluetoothctldiscoverable on
 }
 
-__restartDaemon
+if [ `whoami` = "root" ];then
+    __restartDaemon
 
-cd ${__HOME}/service/
-python service.py &
+    cd ${__HOME}/service/
+    python service.py &
 
-sleep 2
+    sleep 2
 
-cd ${__HOME}/client/
-python client.py
+    cd ${__HOME}/client/
+    python client.py
+
+fi
