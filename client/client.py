@@ -23,7 +23,7 @@ import threading
 class Keyboard(threading.Thread):
 
 
-	def __init__(self):
+	def __init__(self,eventx):
 		#the structure for a bt keyboard input report (size is 10 bytes)
 		threading.Thread.__init__(self)
 		self.state=[
@@ -60,7 +60,7 @@ class Keyboard(threading.Thread):
 			try:
 				#try and get a keyboard - should always be event0 as
 				#we're only plugging one thing in
-				self.dev = InputDevice("/dev/input/event0")
+				self.dev = InputDevice(eventx)
 				have_dev=True
 			except OSError:
 				print "Keyboard not found, waiting 3 seconds and retrying"

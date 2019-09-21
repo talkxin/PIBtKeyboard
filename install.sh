@@ -26,7 +26,7 @@ __install_software(){
 
 if [ ! -f "/etc/dbus-1/system.d/"${DBUS_NAME} ];then
     echo "installing blue_keyboard"
-    # __install_software
+    __install_software
     cp ${__HOME}/dbus/${DBUS_NAME} /etc/dbus-1/system.d/
 
     #change bluetooth conf
@@ -36,11 +36,11 @@ if [ ! -f "/etc/dbus-1/system.d/"${DBUS_NAME} ];then
     crudini --set $__BLUETOOTH_CONF General Name PiZW_BTKb
 
     echo "sh "${__HOME}/start.sh >> /etc/profile
-    
+
     echo "the blue_keyboard is installed"
 else
     echo "the blue_keyboard is installed"
 fi
 
 #start
-# sh ${__HOME}/start.sh
+sh ${__HOME}/start.sh
