@@ -20,5 +20,7 @@ __restartDaemon
 cd ${__HOME}/service/
 python service.py &
 
+sleep 2
+
 cd ${__HOME}/client/
 python client.py
