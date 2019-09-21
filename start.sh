@@ -12,7 +12,7 @@ __restartDaemon(){
     #开启匹配
     bluetoothctl agent on
     bluetoothctl default-agent
-    bluetoothctldiscoverable on
+    bluetoothctl discoverable on
 }
 
 if [ `whoami` = "root" ];then
