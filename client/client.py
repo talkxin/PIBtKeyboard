@@ -16,15 +16,16 @@ import time
 import evdev # used to get input from the keyboard
 from evdev import *
 import keymap # used to map evdev input to hid keodes
-
+import threading
 
 
 #Define a client to listen to local key events
-class Keyboard():
+class Keyboard(threading.Thread):
 
 
 	def __init__(self):
 		#the structure for a bt keyboard input report (size is 10 bytes)
+		threading.Thread.__init__(self)
 		self.state=[
 			0xA1, #this is an input report
 			0x01, #Usage report = Keyboard
@@ -92,9 +93,11 @@ class Keyboard():
 					
 
 	#poll for keyboard events
-	def event_loop(self):
+	def run(self):
 		for event in self.dev.read_loop():
 			#only bother if we hit a key and its an up or down event
+			print(event)
+			print(event.type)
 			if event.type==ecodes.EV_KEY and event.value < 2:
 				self.change_state(event)
 				self.send_input()
@@ -102,13 +105,10 @@ class Keyboard():
 
 	#forward keyboard events to the dbus service
    	def send_input(self):
-		print("send_input")
 		bin_str=""
 		element=self.state[2]
 		for bit in element:
 			bin_str += str(bit)
-		print (int(bin_str,2))
-		print (self.state[4:10])
 		self.iface.send_keys(int(bin_str,2),self.state[4:10]  )
 
 
@@ -116,7 +116,9 @@ class Keyboard():
 if __name__ == "__main__":
 
 	print "Setting up keyboard"
-	kb = Keyboard()
-	print "starting event loop"
-	kb.event_loop()
+	kb0 = Keyboard("/dev/input/event0")
+	kb0.start()
+	kb2 = Keyboard("/dev/input/event2")
+	kb2.start()
+	time.sleep(sys.maxsize)
 
