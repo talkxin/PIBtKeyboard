@@ -96,8 +96,6 @@ class Keyboard(threading.Thread):
 	def run(self):
 		for event in self.dev.read_loop():
 			#only bother if we hit a key and its an up or down event
-			print(event)
-			print(event.type)
 			if event.type==ecodes.EV_KEY and event.value < 2:
 				self.change_state(event)
 				self.send_input()
