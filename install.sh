@@ -15,6 +15,8 @@ DBUS_NAME=org.btservice.keyboard.conf
 __HOME=/home/pi/PIBtKeyboard/
 __BLUETOOTH_CONF=/etc/bluetooth/main.conf 
 
+__SYSTMED_TTY=/etc/systemd/system/getty.target.wants/getty\@tty1.service
+
 #realy software
 __install_software(){
     echo "install software"
@@ -25,7 +27,7 @@ __install_software(){
 }
 
 if [ ! -f "/etc/dbus-1/system.d/"${DBUS_NAME} ];then
-    echo "installing blue_keyboard"
+    echo "installing blue_keyboard"s
     __install_software
     cp ${__HOME}/dbus/${DBUS_NAME} /etc/dbus-1/system.d/
 
@@ -34,6 +36,10 @@ if [ ! -f "/etc/dbus-1/system.d/"${DBUS_NAME} ];then
     crudini --del $__BLUETOOTH_CONF General Name
     crudini --set $__BLUETOOTH_CONF General Class 0x002540
     crudini --set $__BLUETOOTH_CONF General Name PiZW_BTKb
+
+    #root 
+    crudini --del $__SYSTMED_TTY Service ExecStart
+    crudini --set $__SYSTMED_TTY Service ExecStart "-/sbin/agetty --autologin root --noclear %I \$TERM"
 
     echo "sh "${__HOME}/start.sh >> /etc/profile
 
