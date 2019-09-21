@@ -15,8 +15,9 @@ DBUS_NAME=org.btservice.keyboard.conf
 __HOME=/opt/PIBtKeyboard/
 __BLUETOOTH_CONF=/etc/bluetooth/main.conf 
 
-#realy softwore
-__install_softwore(){
+#realy software
+__install_software(){
+    echo "install software"
     apt-get update
     apt-get install -y python-gobject bluez bluez-tools bluez-firmware python-bluez python-dev python-pip
     apt-get install -y crudini
@@ -25,7 +26,7 @@ __install_softwore(){
 
 if [ ! -f "/etc/dbus-1/system.d/"${DBUS_NAME} ];then
     echo "installing blue_keyboard"
-    __install_softwore()
+    # __install_software
     cp ${__HOME}/dbus/${DBUS_NAME} /etc/dbus-1/system.d/
 
     #change bluetooth conf
@@ -33,9 +34,13 @@ if [ ! -f "/etc/dbus-1/system.d/"${DBUS_NAME} ];then
     crudini --del $__BLUETOOTH_CONF General Name
     crudini --set $__BLUETOOTH_CONF General Class 0x002540
     crudini --set $__BLUETOOTH_CONF General Name PiZW_BTKb
+
+    echo "sh "${__HOME}/start.sh >> /etc/profile
+    
+    echo "the blue_keyboard is installed"
 else
     echo "the blue_keyboard is installed"
 fi
 
 #start
-${__HOME}/start.sh
+# sh ${__HOME}/start.sh
