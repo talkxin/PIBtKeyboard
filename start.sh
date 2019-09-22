@@ -24,6 +24,7 @@ if [ `whoami` = "root" ];then
     sleep 2
 
     cd ${__HOME}/client/
-    python client.py
+    python client.py &
 
 fi
+

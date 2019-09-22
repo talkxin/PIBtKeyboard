@@ -1,0 +1,15 @@
+[Unit]
+Description=btkeyboard
+Requires=bluetooth.service dhcpcd.service
+After=bluetooth.service dhcpcd.service
+
+[Service]
+Type=simple
+PIDFile=
+ExecStart=/home/pi/PIBtKeyboard/start.sh
+ExecReload=
+ExecStop=
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
