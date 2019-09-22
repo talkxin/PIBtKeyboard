@@ -119,9 +119,10 @@ if __name__ == "__main__":
 	kb2 = Keyboard("/dev/input/event2")
 	kb2.start()
 	# time.sleep(sys.maxsize)
+	led = open('/sys/class/leds/led0/brightness', 'w', buffering=0)
 	while True:
-		os.system("echo 0 >  /sys/class/leds/led0/brightness")
+		led.write('0')
 		time.sleep(3)
-		os.system("echo 1 >  /sys/class/leds/led0/brightness")
+		led.write('1')
 		time.sleep(3)
 
