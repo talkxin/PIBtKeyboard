@@ -182,7 +182,7 @@ class  BTKbService(dbus.service.Object):
 
         self.device.send_string(cmd_str)
 
-    @dbus.service.method('org.btservice.keyboard', in_signature='yay')
+    @dbus.service.method('org.btservice.keyboard')
     def relisten(self):
         self.device.listen()
 
