@@ -21,7 +21,7 @@ __SYSTEMCTL_PATH=/usr/lib/systemd/system/
 __install_software(){
     echo "install software"
     apt-get update
-    apt-get install -y python-gobject bluez bluez-tools bluez-firmware python-bluez python-dev python-pip
+    apt-get install -y python-gobject bluez bluez-tools bluez-firmware python-bluez python-dev python-pip python-dbus
     apt-get install -y crudini
     pip install evdev
 }
