@@ -169,7 +169,6 @@ class  BTKbService(dbus.service.Object):
             
     @dbus.service.method('org.btservice.keyboard', in_signature='yay')
     def send_keys(self,modifier_byte,keys):
-        print("send_keys")
         cmd_str=""
         cmd_str+=chr(0xA1)
         cmd_str+=chr(0x01)
@@ -181,7 +180,11 @@ class  BTKbService(dbus.service.Object):
                 cmd_str+=chr(key_code)
             count+=1
 
-        self.device.send_string(cmd_str);		
+        self.device.send_string(cmd_str)
+
+    @dbus.service.method('org.btservice.keyboard', in_signature='yay')
+    def relisten(self):
+        self.device.listen()
 
 
 #main routine

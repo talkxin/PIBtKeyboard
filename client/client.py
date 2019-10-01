@@ -84,10 +84,10 @@ class Keyboard(threading.Thread):
 			#Loop through elements 4 to 9 of the inport report structure
 			for i in range(4,10):
 				if self.state[i]== hex_key and event.value ==0:
-					print "Code 0 so we need to depress it"
+					# print "Code 0 so we need to depress it"
 					self.state[i] = 0x00
 				elif self.state[i] == 0x00 and event.value==1:
-					print "if the current space if empty and the key is being pressed"
+					# print "if the current space if empty and the key is being pressed"
 					self.state[i]=hex_key
 					break;
 					
