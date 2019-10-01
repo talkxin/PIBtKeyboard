@@ -111,7 +111,7 @@ class Keyboard(threading.Thread):
 			self.iface.send_keys(int(bin_str,2),self.state[4:10])
 		except Exception:
 			print "keyboard Disconnect"
-			self.iface.listen()
+			self.iface.relisten()
 
 
 
