@@ -17,6 +17,8 @@ __BLUETOOTH_CONF=/etc/bluetooth/main.conf
 
 __SYSTEMCTL_PATH=/usr/lib/systemd/system/
 
+__SYSTEMCTL_TARGET=/lib/systemd/system/ctrl-alt-del.target
+
 #realy software
 __install_software(){
     echo "install software"
@@ -31,6 +33,11 @@ if [ ! -f "/etc/dbus-1/system.d/"${DBUS_NAME} ];then
     __install_software
     cp ${__HOME}/dbus/${DBUS_NAME} /etc/dbus-1/system.d/
 
+    #Shield Ctrl+Alt+Del
+    mv ${__SYSTEMCTL_TARGET} ${__SYSTEMCTL_TARGET}.bak
+    ln -s /dev/null ${__SYSTEMCTL_TARGET}
+    systemctl daemon-reload
+
     #change bluetooth conf
     crudini --del $__BLUETOOTH_CONF General Class
     crudini --del $__BLUETOOTH_CONF General Name
@@ -43,6 +50,7 @@ if [ ! -f "/etc/dbus-1/system.d/"${DBUS_NAME} ];then
     cp service/bluekeyboard.service $__SYSTEMCTL_PATH
     systemctl enable bluekeyboard.service
     echo "the blue_keyboard is installed"
+
 else
     echo "the blue_keyboard is installed"
 fi
