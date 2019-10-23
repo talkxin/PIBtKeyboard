@@ -1,8 +1,8 @@
 #!/usr/bin/python
 #
 # YAPTB Bluetooth keyboard emulator DBUS Service
-# 
-# Adapted from 
+#
+# Adapted from
 # www.linuxuser.co.uk/tutorials/emulate-bluetooth-keyboard-with-the-raspberry-pi
 #
 #
@@ -21,62 +21,65 @@ import bluetooth
 from bluetooth import *
 from dbus.mainloop.glib import DBusGMainLoop
 from gi.repository import GLib
+import ConfigParser
 
 
 #
-#define a bluez 5 profile object for our keyboard
+# define a bluez 5 profile object for our keyboard
 #
 class BTKbBluezProfile(dbus.service.Object):
     fd = -1
 
-    @dbus.service.method("org.bluez.Profile1",in_signature="", out_signature="")
+    @dbus.service.method("org.bluez.Profile1", in_signature="", out_signature="")
     def Release(self):
-            print("Release")
-            mainloop.quit()
+        print("Release")
+        mainloop.quit()
 
-    @dbus.service.method("org.bluez.Profile1",in_signature="", out_signature="")
+    @dbus.service.method("org.bluez.Profile1", in_signature="", out_signature="")
     def Cancel(self):
-            print("Cancel")
+        print("Cancel")
 
     @dbus.service.method("org.bluez.Profile1", in_signature="oha{sv}", out_signature="")
     def NewConnection(self, path, fd, properties):
-            self.fd = fd.take()
-            print("NewConnection(%s, %d)" % (path, self.fd))
-            for key in properties.keys():
-                    if key == "Version" or key == "Features":
-                            print("  %s = 0x%04x" % (key, properties[key]))
-                    else:
-                            print("  %s = %s" % (key, properties[key]))
+        self.fd = fd.take()
+        print("NewConnection(%s, %d)" % (path, self.fd))
+        for key in properties.keys():
+            if key == "Version" or key == "Features":
+                print("  %s = 0x%04x" % (key, properties[key]))
+            else:
+                print("  %s = %s" % (key, properties[key]))
 
     @dbus.service.method("org.bluez.Profile1", in_signature="o", out_signature="")
     def RequestDisconnection(self, path):
-            print("RequestDisconnection(%s)" % (path))
+        print("RequestDisconnection(%s)" % (path))
 
-            if (self.fd > 0):
-                    os.close(self.fd)
-                    self.fd = -1
+        if (self.fd > 0):
+            os.close(self.fd)
+            self.fd = -1
 
     def __init__(self, bus, path):
-            dbus.service.Object.__init__(self, bus, path)
+        dbus.service.Object.__init__(self, bus, path)
 
 
 #
-#create a bluetooth device to emulate a HID keyboard, 
+# create a bluetooth device to emulate a HID keyboard,
 # advertize a SDP record using our bluez profile class
 #
 class BTKbDevice():
-    #change these constants 
+    # change these constants
     # MY_ADDRESS="00:1A:7D:DA:71:13"
-    MY_DEV_NAME="PiZW_BTKb"
+    MY_DEV_NAME = "PiZW_BTKb"
 
-    #define some constants
-    P_CTRL =17  #Service port - must match port configured in SDP record
-    P_INTR =19  #Service port - must match port configured in SDP record#Interrrupt port  
-    PROFILE_DBUS_PATH="/bluez/btservice/btkb_profile" #dbus path of  the bluez profile we will create
-    SDP_RECORD_PATH = sys.path[0] + "/sdp_record.xml" #file path of the sdp record to laod
-    UUID="00001124-0000-1000-8000-00805f9b34fb"
-             
- 
+    # define some constants
+    P_CTRL = 17  # Service port - must match port configured in SDP record
+    P_INTR = 19  # Service port - must match port configured in SDP record#Interrrupt port
+    # dbus path of  the bluez profile we will create
+    PROFILE_DBUS_PATH = "/bluez/btservice/btkb_profile"
+    # file path of the sdp record to laod
+    SDP_RECORD_PATH = sys.path[0] + "/sdp_record.xml"
+    BLUE_INI = sys.path[0] + "/blue.ini"
+    UUID = "00001124-0000-1000-8000-00805f9b34fb"
+
     def __init__(self):
 
         print("Setting up BT device")
@@ -84,38 +87,40 @@ class BTKbDevice():
         self.init_bt_device()
         self.init_bluez_profile()
 
-    #configure the bluetooth hardware device
+    # configure the bluetooth hardware device
     def init_bt_device(self):
         print("Configuring for name "+BTKbDevice.MY_DEV_NAME)
-        #set the device class to a keybord and set the name
+        # set the device class to a keybord and set the name
         os.system("hciconfig hcio class 0x002540")
         os.system("hciconfig hcio name " + BTKbDevice.MY_DEV_NAME)
-        #make the device discoverable
+        # make the device discoverable
         os.system("hciconfig hcio piscan")
 
-    #set up a bluez profile to advertise device capabilities from a loaded service record
+    # set up a bluez profile to advertise device capabilities from a loaded service record
     def init_bluez_profile(self):
 
         print("Configuring Bluez Profile")
-        #setup profile options
-        service_record=self.read_sdp_service_record()
+        # setup profile options
+        service_record = self.read_sdp_service_record()
 
         opts = {
-            "ServiceRecord":service_record,
-            "Role":"server",
-            "RequireAuthentication":False,
-            "RequireAuthorization":False
+            "ServiceRecord": service_record,
+            "Role": "server",
+            "RequireAuthentication": False,
+            "RequireAuthorization": False
         }
 
-        #retrieve a proxy for the bluez profile interface
+        # retrieve a proxy for the bluez profile interface
         bus = dbus.SystemBus()
-        manager = dbus.Interface(bus.get_object("org.bluez","/org/bluez"), "org.bluez.ProfileManager1")
+        manager = dbus.Interface(bus.get_object(
+            "org.bluez", "/org/bluez"), "org.bluez.ProfileManager1")
         profile = BTKbBluezProfile(bus, BTKbDevice.PROFILE_DBUS_PATH)
-        manager.RegisterProfile(BTKbDevice.PROFILE_DBUS_PATH, BTKbDevice.UUID,opts)
+        manager.RegisterProfile(
+            BTKbDevice.PROFILE_DBUS_PATH, BTKbDevice.UUID, opts)
         print("Profile registered ")
 
+    # read and return an sdp record from a file
 
-    #read and return an sdp record from a file
     def read_sdp_service_record(self):
         print("Reading service record")
         try:
@@ -123,62 +128,108 @@ class BTKbDevice():
         except:
             sys.exit("Could not open the sdp record. Exiting...")
 
-        return fh.read()   
+        return fh.read()
 
+    # listen for incoming client connections
+    # ideally this would be handled by the Bluez 5 profile
+    # but that didn't seem to work
 
-
-    #listen for incoming client connections
-    #ideally this would be handled by the Bluez 5 profile 
-    #but that didn't seem to work
     def listen(self):
-        print("Waiting for connections")
-        self.scontrol=BluetoothSocket(L2CAP)
-        self.sinterrupt=BluetoothSocket(L2CAP)
-        #bind these sockets to a port - port zero to select next available		
-        self.scontrol.bind(("",self.P_CTRL))
-        self.sinterrupt.bind(("",self.P_INTR ))
-        #Start listening on the server sockets 
-        self.scontrol.listen(1) # Limit of 1 connection
-        self.sinterrupt.listen(1)
-        self.ccontrol,cinfo = self.scontrol.accept()
-        print ("Got a connection on the control channel from " + cinfo[0])
-        self.cinterrupt, cinfo = self.sinterrupt.accept()
-        print ("Got a connection on the interrupt channel from " + cinfo[0])
+        bluemac = self.getMac()
+        if(bluemac is None):
+            print("Waiting for connections")
+            self.scontrol = BluetoothSocket(L2CAP)
+            self.sinterrupt = BluetoothSocket(L2CAP)
+            # bind these sockets to a port - port zero to select next available
+            self.scontrol.bind(("", self.P_CTRL))
+            self.sinterrupt.bind(("", self.P_INTR))
+            # Start listening on the server sockets
+            self.scontrol.listen(1)  # Limit of 1 connection
+            self.sinterrupt.listen(1)
+            self.ccontrol, cinfo = self.scontrol.accept()
+            self.setMac(cinfo[0])
+            print("Got a connection on the control channel from " + cinfo[0])
+            self.cinterrupt, cinfo = self.sinterrupt.accept()
+            print("Got a connection on the interrupt channel from " + cinfo[0])
+        else:
+            self.relisten(bluemac)
 
+    def relisten(self, cinfo):
+        try:
+            print("Waiting for connections")
+            self.ccontrol = BluetoothSocket(L2CAP)
+            self.cinterrupt = BluetoothSocket(L2CAP)
+            self.ccontrol.connect((cinfo, self.P_CTRL))
+            self.cinterrupt.connect((cinfo, self.P_INTR))
+            print("Got a connection on the control channel from " + cinfo)
+        except BluetoothError as e:
+            code = e.message[1:len(e.message)-1].split(",")[0]
+            if(code == "112"):
+                time.sleep(3)
+                self.relisten(cinfo)
+            elif(code == "52"):
+                self.delmac()
+                self.listen()
+            else:
+                self.delmac()
+                self.listen()
 
-    #send a string to the bluetooth host machine
-    def send_string(self,message):
+    def getMac(self):
+        try:
+            conf = ConfigParser.ConfigParser()
+            conf.read(BTKbDevice.BLUE_INI)
+            return conf.get("BIND", "bluemac")
+        except Exception:
+            return None
+
+    def setMac(self, mac):
+        conf = ConfigParser.ConfigParser()
+        conf.read(BTKbDevice.BLUE_INI)
+        if not conf.has_section("BIND"):
+            conf.add_section("BIND")
+        conf.set("BIND", "bluemac", mac)
+        conf.write(open(BTKbDevice.BLUE_INI, "w"))
+
+    def delmac(self):
+        conf = ConfigParser.ConfigParser()
+        conf.read(BTKbDevice.BLUE_INI)
+        conf.remove_option("BIND", "bluemac")
+        conf.write(open(BTKbDevice.BLUE_INI, "w"))
+
+    # send a string to the bluetooth host machine
+
+    def send_string(self, message):
         self.cinterrupt.send(message)
 
 
-
-#define a dbus service that emulates a bluetooth keyboard
-#this will enable different clients to connect to and use 
-#the service
-class  BTKbService(dbus.service.Object):
+# define a dbus service that emulates a bluetooth keyboard
+# this will enable different clients to connect to and use
+# the service
+class BTKbService(dbus.service.Object):
 
     def __init__(self):
         print("Setting up service")
-        #set up as a dbus service
-        bus_name=dbus.service.BusName("org.btservice.keyboard",bus=dbus.SystemBus())
-        dbus.service.Object.__init__(self,bus_name,"/org/btservice/keyboard")
-        #create and setup our device
-        self.device= BTKbDevice();
-        #start listening for connections
-        self.device.listen();
-            
+        # set up as a dbus service
+        bus_name = dbus.service.BusName(
+            "org.btservice.keyboard", bus=dbus.SystemBus())
+        dbus.service.Object.__init__(self, bus_name, "/org/btservice/keyboard")
+        # create and setup our device
+        self.device = BTKbDevice()
+        # start listening for connections
+        self.device.listen()
+
     @dbus.service.method('org.btservice.keyboard', in_signature='yay')
-    def send_keys(self,modifier_byte,keys):
-        cmd_str=""
-        cmd_str+=chr(0xA1)
-        cmd_str+=chr(0x01)
-        cmd_str+=chr(modifier_byte)
-        cmd_str+=chr(0x00)
-        count=0
+    def send_keys(self, modifier_byte, keys):
+        cmd_str = ""
+        cmd_str += chr(0xA1)
+        cmd_str += chr(0x01)
+        cmd_str += chr(modifier_byte)
+        cmd_str += chr(0x00)
+        count = 0
         for key_code in keys:
-            if(count<6):
-                cmd_str+=chr(key_code)
-            count+=1
+            if(count < 6):
+                cmd_str += chr(key_code)
+            count += 1
 
         self.device.send_string(cmd_str)
 
@@ -187,11 +238,11 @@ class  BTKbService(dbus.service.Object):
         self.device.listen()
 
 
-#main routine
+# main routine
 if __name__ == "__main__":
     # we an only run as root
     if not os.geteuid() == 0:
-       sys.exit("Only root can run this script")
+        sys.exit("Only root can run this script")
 
     DBusGMainLoop(set_as_default=True)
     myservice = BTKbService()

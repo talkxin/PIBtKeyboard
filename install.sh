@@ -26,6 +26,7 @@ __install_software(){
     apt-get install -y python-gobject bluez bluez-tools bluez-firmware python-bluez python-dev python-pip python-dbus
     apt-get install -y crudini
     pip install evdev
+    pip install ConfigParser
 }
 
 if [ ! -f "/etc/dbus-1/system.d/"${DBUS_NAME} ];then
