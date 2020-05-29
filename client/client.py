@@ -17,12 +17,20 @@ import evdev  # used to get input from the keyboard
 from evdev import *
 import keymap  # used to map evdev input to hid keodes
 import threading
+import ConfigParser
+import ast
 
 
 # Define a client to listen to local key events
 class Keyboard(threading.Thread):
 
     def __init__(self, eventx):
+        # save action
+        self.action = []
+        # special action 1
+        self.action1 = [39, 224, 226, 227]
+        # special action 2
+        self.action2 = [46, 224, 226, 227]
         # the structure for a bt keyboard input report (size is 10 bytes)
         threading.Thread.__init__(self)
         self.state = [
@@ -89,12 +97,79 @@ class Keyboard(threading.Thread):
                     self.state[i] = hex_key
                     break
 
+    def special_action(self, event):
+        hex_key = keymap.convert(ecodes.KEY[event.code])
+        if event.value == 0:
+            self.action = []
+        else:
+            self.action.append(hex_key)
+            self.action.sort()
+            if cmp(self.action, self.action1) == 0:
+                print "research"
+                pid = self.getServicePID()
+                if pid is not None:
+                    os.system("kill -9 "+pid)
+                os.system("sh "+os.getenv('__HOME')+"/start.sh search &")
+                os.system("kill -9 "+str(os.getpid()))
+            elif cmp(self.action, self.action2) == 0:
+                print "next"
+                nextmac = self.getNext()
+                print(nextmac)
+                pid = self.getServicePID()
+                if pid is not None:
+                    os.system("kill -9 "+pid)
+                if nextmac is not None:
+                    os.system("sh "+os.getenv('__HOME') +
+                              "/start.sh "+self.getNext()+" &")
+                else:
+                    os.system("sh "+os.getenv('__HOME')+"/start.sh &")
+
+                os.system("kill -9 "+str(os.getpid()))
+
+    def getServicePID(self):
+        try:
+            conf = ConfigParser.ConfigParser()
+            conf.read(os.getenv('__HOME') + "/blue.ini")
+            return conf.get("RUNER", "service")
+        except Exception:
+            return None
+
+    def getNext(self):
+        try:
+            conf = ConfigParser.ConfigParser()
+            conf.read(os.getenv('__HOME') + "/blue.ini")
+            nowmac = conf.get("RUNER", "now")
+            default = conf.get("BIND", "default")
+            device = conf.get("BIND", "device")
+            if nowmac is None:
+                return None
+            elif device is None:
+                return None
+            else:
+                ldevice = ast.literal_eval(device)
+                ll = 0
+                lens = len(ldevice)
+                if nowmac != default:
+                    ll = ldevice.index(nowmac)+1
+                while True:
+                    if ll < lens:
+                        rmac = ldevice[ll]
+                        ll = ll+1
+                        return rmac
+                    else:
+                        return None
+
+                return None
+        except Exception:
+            return None
+
     # poll for keyboard events
 
     def run(self):
         for event in self.dev.read_loop():
             # only bother if we hit a key and its an up or down event
             if event.type == ecodes.EV_KEY and event.value < 2:
+                self.special_action(event)
                 self.change_state(event)
                 self.send_input()
 
@@ -112,13 +187,22 @@ class Keyboard(threading.Thread):
             self.iface.relisten()
 
 
-if __name__ == "__main__":
-
-    print "Setting up keyboard"
+def connect():
     kb0 = Keyboard("/dev/input/event0")
     kb0.start()
     kb2 = Keyboard("/dev/input/event2")
     kb2.start()
+
+
+if __name__ == "__main__":
+    while True:
+        try:
+            connect()
+            print "Setting up keyboard"
+            break
+        except Exception:
+            time.sleep(3)
+
     # time.sleep(sys.maxsize)
     led = open('/sys/class/leds/led0/brightness', 'w', buffering=0)
     while True:

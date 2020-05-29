@@ -22,6 +22,7 @@ from bluetooth import *
 from dbus.mainloop.glib import DBusGMainLoop
 from gi.repository import GLib
 import ConfigParser
+import ast
 
 
 #
@@ -77,13 +78,13 @@ class BTKbDevice():
     PROFILE_DBUS_PATH = "/bluez/btservice/btkb_profile"
     # file path of the sdp record to laod
     SDP_RECORD_PATH = sys.path[0] + "/sdp_record.xml"
-    BLUE_INI = sys.path[0] + "/blue.ini"
+    BLUE_INI = os.getenv('__HOME') + "/blue.ini"
     UUID = "00001124-0000-1000-8000-00805f9b34fb"
 
-    def __init__(self):
+    def __init__(self, default):
 
         print("Setting up BT device")
-
+        self.default = default
         self.init_bt_device()
         self.init_bluez_profile()
 
@@ -135,24 +136,34 @@ class BTKbDevice():
     # but that didn't seem to work
 
     def listen(self):
-        bluemac = self.getMac()
-        if(bluemac is None):
-            print("Waiting for connections")
-            self.scontrol = BluetoothSocket(L2CAP)
-            self.sinterrupt = BluetoothSocket(L2CAP)
-            # bind these sockets to a port - port zero to select next available
-            self.scontrol.bind(("", self.P_CTRL))
-            self.sinterrupt.bind(("", self.P_INTR))
-            # Start listening on the server sockets
-            self.scontrol.listen(1)  # Limit of 1 connection
-            self.sinterrupt.listen(1)
-            self.ccontrol, cinfo = self.scontrol.accept()
-            self.setMac(cinfo[0])
-            print("Got a connection on the control channel from " + cinfo[0])
-            self.cinterrupt, cinfo = self.sinterrupt.accept()
-            print("Got a connection on the interrupt channel from " + cinfo[0])
+        print(self.default)
+        if(self.default is None):
+            mac = self.getMac()
+            if mac is None:
+                self.research()
+            else:
+                self.relisten(mac)
+        elif(self.default == "search"):
+            print("research")
+            self.research()
         else:
-            self.relisten(bluemac)
+            self.relisten(self.default)
+
+    def research(self):
+        print("Waiting for connections")
+        self.scontrol = BluetoothSocket(L2CAP)
+        self.sinterrupt = BluetoothSocket(L2CAP)
+        # bind these sockets to a port - port zero to select next available
+        self.scontrol.bind(("", self.P_CTRL))
+        self.sinterrupt.bind(("", self.P_INTR))
+        # Start listening on the server sockets
+        self.scontrol.listen(1)  # Limit of 1 connection
+        self.sinterrupt.listen(1)
+        self.ccontrol, cinfo = self.scontrol.accept()
+        self.setMac(cinfo[0], "device")
+        print("Got a connection on the control channel from " + cinfo[0])
+        self.cinterrupt, cinfo = self.sinterrupt.accept()
+        print("Got a connection on the interrupt channel from " + cinfo[0])
 
     def relisten(self, cinfo):
         try:
@@ -162,6 +173,8 @@ class BTKbDevice():
             self.ccontrol.connect((cinfo, self.P_CTRL))
             self.cinterrupt.connect((cinfo, self.P_INTR))
             print("Got a connection on the control channel from " + cinfo)
+            # set now connect
+            self.setRuner(cinfo)
         except BluetoothError as e:
             code = e.message[1:len(e.message)-1].split(",")[0]
             if(code == "112"):
@@ -174,26 +187,47 @@ class BTKbDevice():
                 self.delmac()
                 self.listen()
 
-    def getMac(self):
+    def setRuner(self, mac):
+        conf = ConfigParser.ConfigParser()
+        conf.read(BTKbDevice.BLUE_INI)
+        conf.set("RUNER", "now", mac)
+        conf.write(open(BTKbDevice.BLUE_INI, "w"))
+
+    def getMac(self, macpath="default"):
         try:
             conf = ConfigParser.ConfigParser()
             conf.read(BTKbDevice.BLUE_INI)
-            return conf.get("BIND", "bluemac")
+            return conf.get("BIND", macpath)
         except Exception:
             return None
 
-    def setMac(self, mac):
+    def setMac(self, mac, macname="default"):
+
+        deviceMac = self.getMac("device")
+        defaultMac = self.getMac()
+        if deviceMac is None:
+            deviceMac = []
+        else:
+            deviceMac = ast.literal_eval(deviceMac)
+        if deviceMac.count(mac) < 1:
+            deviceMac.append(mac)
         conf = ConfigParser.ConfigParser()
         conf.read(BTKbDevice.BLUE_INI)
         if not conf.has_section("BIND"):
             conf.add_section("BIND")
-        conf.set("BIND", "bluemac", mac)
+
+        # if ini file is not exists
+        if defaultMac is None or defaultMac == mac:
+            macname = "default"
+            deviceMac = mac
+
+        conf.set("BIND", macname, str(deviceMac))
         conf.write(open(BTKbDevice.BLUE_INI, "w"))
 
-    def delmac(self):
+    def delmac(self, macname="default"):
         conf = ConfigParser.ConfigParser()
         conf.read(BTKbDevice.BLUE_INI)
-        conf.remove_option("BIND", "bluemac")
+        conf.remove_option("BIND", macname)
         conf.write(open(BTKbDevice.BLUE_INI, "w"))
 
     # send a string to the bluetooth host machine
@@ -207,14 +241,14 @@ class BTKbDevice():
 # the service
 class BTKbService(dbus.service.Object):
 
-    def __init__(self):
+    def __init__(self, default):
         print("Setting up service")
         # set up as a dbus service
         bus_name = dbus.service.BusName(
             "org.btservice.keyboard", bus=dbus.SystemBus())
         dbus.service.Object.__init__(self, bus_name, "/org/btservice/keyboard")
         # create and setup our device
-        self.device = BTKbDevice()
+        self.device = BTKbDevice(default)
         # start listening for connections
         self.device.listen()
 
@@ -238,13 +272,25 @@ class BTKbService(dbus.service.Object):
         self.device.listen()
 
 
+def setPID(pid=os.getpid()):
+    conf = ConfigParser.ConfigParser()
+    conf.read(BTKbDevice.BLUE_INI)
+    if not conf.has_section("RUNER"):
+        conf.add_section("RUNER")
+    conf.set("RUNER", "service", os.getpid())
+    conf.write(open(BTKbDevice.BLUE_INI, "w"))
+
+
 # main routine
 if __name__ == "__main__":
     # we an only run as root
     if not os.geteuid() == 0:
         sys.exit("Only root can run this script")
-
+    default = None
+    if len(sys.argv) > 1:
+        default = str(sys.argv[1])
+    setPID()
     DBusGMainLoop(set_as_default=True)
-    myservice = BTKbService()
+    myservice = BTKbService(default)
     mainloop = GLib.MainLoop()
     mainloop.run()

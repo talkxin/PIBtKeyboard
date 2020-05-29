@@ -3,7 +3,7 @@
 __HOME=/home/pi/PIBtKeyboard/
 
 #start Bluetooth daemon
-__restartDaemon(){
+__restartDaemon() {
     /etc/init.d/bluetooth stop
     /usr/sbin/bluetoothd --nodetach --debug -p time &
     hciconfig hcio up
@@ -15,16 +15,21 @@ __restartDaemon(){
     bluetoothctl discoverable on
 }
 
-if [ `whoami` = "root" ];then
-    __restartDaemon
-
+__connect() {
     cd ${__HOME}/service/
-    python service.py &
+    python service.py $1 &
 
     sleep 2
 
     cd ${__HOME}/client/
     python client.py &
+}
 
+if [ $(whoami) = "root" ]; then
+    export __HOME=${__HOME}
+    if [ ! -n ${__RESTART} ]; then
+        __restartDaemon
+        export __RESTART=1
+    fi
+    __connect $1
 fi
-
