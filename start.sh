@@ -15,6 +15,13 @@ __restartDaemon() {
     bluetoothctl discoverable on
 }
 
+__research() {
+    hciconfig hci0 sspmode
+    bluetoothctl agent on
+    bluetoothctl default-agent
+    bluetoothctl discoverable on
+}
+
 __connect() {
     cd ${__HOME}/service/
     python service.py $1 &
@@ -30,6 +37,9 @@ if [ $(whoami) = "root" ]; then
     if [ ! -n ${__RESTART} ]; then
         __restartDaemon
         export __RESTART=1
+    fi
+    if [[ $1 == "search" ]]; then
+        __research
     fi
     __connect $1
 fi
