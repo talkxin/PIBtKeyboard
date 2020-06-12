@@ -175,7 +175,7 @@ class BTKbDevice():
             self.cinterrupt.connect((cinfo, self.P_INTR))
             print("Got a connection on the control channel from " + cinfo)
             # set now connect
-            self.setRuner(cinfo[0])
+            self.setRuner(cinfo)
         except BluetoothError as e:
             code = e.message[1:len(e.message)-1].split(",")[0]
             if(code == "112"):
