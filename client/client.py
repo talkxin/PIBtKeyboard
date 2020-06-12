@@ -23,6 +23,7 @@ import ast
 
 # Define a client to listen to local key events
 class Keyboard(threading.Thread):
+    KEYBOARD_HOME = os.path.abspath(os.path.join(sys.path[0], os.path.pardir))
 
     def __init__(self, eventx):
         # save action
@@ -53,14 +54,14 @@ class Keyboard(threading.Thread):
             0x00,
             0x00]
 
-        print "setting up DBus Client"
+        print("setting up DBus Client")
         self.bus = dbus.SystemBus()
         # self.btkservice = self.bus.get_object('org.yaptb.btkbservice','/org/yaptb/btkbservice')
         # self.iface = dbus.Interface(self.btkservice,'org.yaptb.btkbservice')
         self.iface = self.bus.get_object(
             "org.btservice.keyboard", "/org/btservice/keyboard")
 
-        print "waiting for keyboard"
+        print("waiting for keyboard")
 
         # keep trying to key a keyboard
         have_dev = False
@@ -71,9 +72,9 @@ class Keyboard(threading.Thread):
                 self.dev = InputDevice(eventx)
                 have_dev = True
             except OSError:
-                print "Keyboard not found, waiting 3 seconds and retrying"
+                print("Keyboard not found, waiting 3 seconds and retrying")
                 time.sleep(3)
-            print "found a keyboard"
+            print("found a keyboard")
 
     def change_state(self, event):
         evdev_code = ecodes.KEY[event.code]
@@ -105,31 +106,31 @@ class Keyboard(threading.Thread):
             self.action.append(hex_key)
             self.action.sort()
             if cmp(self.action, self.action1) == 0:
-                print "research"
+                print("research")
                 pid = self.getServicePID()
                 if pid is not None:
                     os.system("kill -9 "+pid)
-                os.system("sh "+os.getenv('__HOME')+"/start.sh search &")
+                os.system("sh "+Keyboard.KEYBOARD_HOME+"/start.sh -s &")
                 os.system("kill -9 "+str(os.getpid()))
             elif cmp(self.action, self.action2) == 0:
-                print "next"
+                print("next")
                 nextmac = self.getNext()
                 print(nextmac)
                 pid = self.getServicePID()
                 if pid is not None:
                     os.system("kill -9 "+pid)
                 if nextmac is not None:
-                    os.system("sh "+os.getenv('__HOME') +
-                              "/start.sh "+self.getNext()+" &")
+                    os.system("sh "+Keyboard.KEYBOARD_HOME +
+                              "/start.sh -n "+self.getNext()+" &")
                 else:
-                    os.system("sh "+os.getenv('__HOME')+"/start.sh &")
+                    os.system("sh "+Keyboard.KEYBOARD_HOME+"/start.sh -d &")
 
                 os.system("kill -9 "+str(os.getpid()))
 
     def getServicePID(self):
         try:
             conf = ConfigParser.ConfigParser()
-            conf.read(os.getenv('__HOME') + "/blue.ini")
+            conf.read(Keyboard.KEYBOARD_HOME + "/blue.ini")
             return conf.get("RUNER", "service")
         except Exception:
             return None
@@ -137,7 +138,7 @@ class Keyboard(threading.Thread):
     def getNext(self):
         try:
             conf = ConfigParser.ConfigParser()
-            conf.read(os.getenv('__HOME') + "/blue.ini")
+            conf.read(Keyboard.KEYBOARD_HOME + "/blue.ini")
             nowmac = conf.get("RUNER", "now")
             default = conf.get("BIND", "default")
             device = conf.get("BIND", "device")
@@ -183,7 +184,7 @@ class Keyboard(threading.Thread):
                 bin_str += str(bit)
             self.iface.send_keys(int(bin_str, 2), self.state[4:10])
         except Exception:
-            print "keyboard Disconnect"
+            print("keyboard Disconnect")
             self.iface.relisten()
 
 
@@ -198,7 +199,7 @@ if __name__ == "__main__":
     while True:
         try:
             connect()
-            print "Setting up keyboard"
+            print("Setting up keyboard")
             break
         except Exception:
             time.sleep(3)

@@ -9,18 +9,17 @@
 
 #判断是否已经安装过程序，即判断dbus配置文件是否安装至相应目录
 
-
 DBUS_NAME=org.btservice.keyboard.conf
 
 __HOME=/home/pi/PIBtKeyboard/
-__BLUETOOTH_CONF=/etc/bluetooth/main.conf 
+__BLUETOOTH_CONF=/etc/bluetooth/main.conf
 
 __SYSTEMCTL_PATH=/usr/lib/systemd/system/
 
 __SYSTEMCTL_TARGET=/lib/systemd/system/ctrl-alt-del.target
 
 #realy software
-__install_software(){
+__install_software() {
     echo "install software"
     apt-get update
     apt-get install -y python-gobject bluez bluez-tools bluez-firmware python-bluez python-dev python-pip python-dbus
@@ -29,7 +28,7 @@ __install_software(){
     pip install ConfigParser
 }
 
-if [ ! -f "/etc/dbus-1/system.d/"${DBUS_NAME} ];then
+if [ ! -f "/etc/dbus-1/system.d/"${DBUS_NAME} ]; then
     echo "installing blue_keyboard"s
     __install_software
     cp ${__HOME}/dbus/${DBUS_NAME} /etc/dbus-1/system.d/
@@ -47,6 +46,7 @@ if [ ! -f "/etc/dbus-1/system.d/"${DBUS_NAME} ];then
 
     #systemctl enable btkb
     chmod 777 start.sh
+    chmod 777 stop.sh
     mkdir -p $__SYSTEMCTL_PATH
     cp service/bluekeyboard.service $__SYSTEMCTL_PATH
     systemctl enable bluekeyboard.service

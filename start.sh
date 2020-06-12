@@ -33,13 +33,26 @@ __connect() {
 }
 
 if [ $(whoami) = "root" ]; then
-    export __HOME=${__HOME}
-    if [ ! -n ${__RESTART} ]; then
-        __restartDaemon
-        export __RESTART=1
-    fi
-    if [[ $1 == "search" ]]; then
-        __research
-    fi
-    __connect $1
+    while getopts "n:isd" arg; do
+        case $arg in
+        i)
+            __restartDaemon
+            __connect "default"
+            ;;
+        n)
+            __connect $OPTARG
+            ;;
+        s)
+            __research
+            __connect "search"
+            ;;
+        d)
+            __connect "default"
+            ;;
+        ?)
+            echo "unkonw argument"
+            exit 1
+            ;;
+        esac
+    done
 fi

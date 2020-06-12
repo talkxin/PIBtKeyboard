@@ -1,15 +1,16 @@
 [Unit]
 Description=btkeyboard
-Requires=
-After=
+Requires=bluetooth.service
+After=bluetooth.service
 
 [Service]
 Type=forking
 PIDFile=
-ExecStart=/home/pi/PIBtKeyboard/start.sh
+ExecStart=/home/pi/PIBtKeyboard/start.sh -i
 ExecReload=
-ExecStop=
+ExecStop=/home/pi/PIBtKeyboard/stop.sh
 PrivateTmp=true
+LimitNICE=1
 
 [Install]
 WantedBy=multi-user.target

@@ -70,7 +70,7 @@ class BTKbDevice():
     # change these constants
     # MY_ADDRESS="00:1A:7D:DA:71:13"
     MY_DEV_NAME = "PiZW_BTKb"
-
+    KEYBOARD_HOME = os.path.abspath(os.path.join(sys.path[0], os.path.pardir))
     # define some constants
     P_CTRL = 17  # Service port - must match port configured in SDP record
     P_INTR = 19  # Service port - must match port configured in SDP record#Interrrupt port
@@ -78,7 +78,7 @@ class BTKbDevice():
     PROFILE_DBUS_PATH = "/bluez/btservice/btkb_profile"
     # file path of the sdp record to laod
     SDP_RECORD_PATH = sys.path[0] + "/sdp_record.xml"
-    BLUE_INI = os.getenv('__HOME') + "/blue.ini"
+    BLUE_INI = KEYBOARD_HOME + "/blue.ini"
     UUID = "00001124-0000-1000-8000-00805f9b34fb"
 
     def __init__(self, default):
@@ -136,15 +136,14 @@ class BTKbDevice():
     # but that didn't seem to work
 
     def listen(self):
-        print(self.default)
-        if(self.default is None):
+        if(self.default == "default"):
             mac = self.getMac()
             if mac is None:
+                print("research")
                 self.research()
             else:
                 self.relisten(mac)
         elif(self.default == "search"):
-            print("research")
             self.research()
         else:
             self.relisten(self.default)
@@ -160,7 +159,9 @@ class BTKbDevice():
         self.scontrol.listen(1)  # Limit of 1 connection
         self.sinterrupt.listen(1)
         self.ccontrol, cinfo = self.scontrol.accept()
-        self.setMac(cinfo[0], "device")
+        self.setMac(cinfo[0])
+        # set now connect
+        self.setRuner(cinfo[0])
         print("Got a connection on the control channel from " + cinfo[0])
         self.cinterrupt, cinfo = self.sinterrupt.accept()
         print("Got a connection on the interrupt channel from " + cinfo[0])
@@ -174,7 +175,7 @@ class BTKbDevice():
             self.cinterrupt.connect((cinfo, self.P_INTR))
             print("Got a connection on the control channel from " + cinfo)
             # set now connect
-            self.setRuner(cinfo)
+            self.setRuner(cinfo[0])
         except BluetoothError as e:
             code = e.message[1:len(e.message)-1].split(",")[0]
             if(code == "112"):
@@ -201,26 +202,27 @@ class BTKbDevice():
         except Exception:
             return None
 
-    def setMac(self, mac, macname="default"):
-
+    def setMac(self, mac):
         deviceMac = self.getMac("device")
         defaultMac = self.getMac()
-        if deviceMac is None:
-            deviceMac = []
-        else:
-            deviceMac = ast.literal_eval(deviceMac)
-        if deviceMac.count(mac) < 1:
-            deviceMac.append(mac)
-        conf = ConfigParser.ConfigParser()
-        conf.read(BTKbDevice.BLUE_INI)
-        if not conf.has_section("BIND"):
-            conf.add_section("BIND")
-
+        macname = "default"
         # if ini file is not exists
         if defaultMac is None or defaultMac == mac:
             macname = "default"
             deviceMac = mac
+        else:
+            macname = "device"
+            if deviceMac is None:
+                deviceMac = []
+            else:
+                deviceMac = ast.literal_eval(deviceMac)
+            if deviceMac.count(mac) < 1:
+                deviceMac.append(mac)
 
+        conf = ConfigParser.ConfigParser()
+        conf.read(BTKbDevice.BLUE_INI)
+        if not conf.has_section("BIND"):
+            conf.add_section("BIND")
         conf.set("BIND", macname, str(deviceMac))
         conf.write(open(BTKbDevice.BLUE_INI, "w"))
 
