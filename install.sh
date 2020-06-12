@@ -47,6 +47,7 @@ if [ ! -f "/etc/dbus-1/system.d/"${DBUS_NAME} ]; then
     #systemctl enable btkb
     chmod 777 start.sh
     chmod 777 stop.sh
+    chmod 777 restart.sh
     mkdir -p $__SYSTEMCTL_PATH
     cp service/bluekeyboard.service $__SYSTEMCTL_PATH
     systemctl enable bluekeyboard.service
