@@ -175,20 +175,17 @@ class Keyboard(threading.Thread):
                     self.change_state(event)
                     self.send_input()
         except Exception:
-                print("keyboard Disconnect")
+            print("keyboard Disconnect")
 
     # forward keyboard events to the dbus service
 
     def send_input(self):
-        try:
-            bin_str = ""
-            element = self.state[2]
-            for bit in element:
-                bin_str += str(bit)
-            self.iface.send_keys(int(bin_str, 2), self.state[4:10])
-        except Exception:
-            print("keyboard Disconnect")
-            self.iface.relisten()
+        bin_str = ""
+        element = self.state[2]
+        for bit in element:
+            bin_str += str(bit)
+        self.iface.send_keys(int(bin_str, 2), self.state[4:10])
+            # self.iface.relisten()
 
 
 def connect():

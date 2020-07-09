@@ -23,6 +23,7 @@ from dbus.mainloop.glib import DBusGMainLoop
 from gi.repository import GLib
 import ConfigParser
 import ast
+import threading
 
 
 #
@@ -66,7 +67,7 @@ class BTKbBluezProfile(dbus.service.Object):
 # create a bluetooth device to emulate a HID keyboard,
 # advertize a SDP record using our bluez profile class
 #
-class BTKbDevice():
+class BTKbDevice(threading.Thread):
     # change these constants
     # MY_ADDRESS="00:1A:7D:DA:71:13"
     MY_DEV_NAME = "PiZW_BTKb"
@@ -87,6 +88,10 @@ class BTKbDevice():
         self.default = default
         self.init_bt_device()
         self.init_bluez_profile()
+        threading.Thread.__init__(self)
+
+    def run(self):
+        self.listen()
 
     # configure the bluetooth hardware device
     def init_bt_device(self):
@@ -149,7 +154,7 @@ class BTKbDevice():
             self.relisten(self.default)
 
     def research(self):
-        print("Waiting for connections")
+        print("Waiting for research")
         self.scontrol = BluetoothSocket(L2CAP)
         self.sinterrupt = BluetoothSocket(L2CAP)
         # bind these sockets to a port - port zero to select next available
@@ -162,6 +167,7 @@ class BTKbDevice():
         self.setMac(cinfo[0])
         # set now connect
         self.setRuner(cinfo[0])
+        print("==============================")
         print("Got a connection on the control channel from " + cinfo[0])
         self.cinterrupt, cinfo = self.sinterrupt.accept()
         print("Got a connection on the interrupt channel from " + cinfo[0])
@@ -173,6 +179,7 @@ class BTKbDevice():
             self.cinterrupt = BluetoothSocket(L2CAP)
             self.ccontrol.connect((cinfo, self.P_CTRL))
             self.cinterrupt.connect((cinfo, self.P_INTR))
+            print("--------------------------")
             print("Got a connection on the control channel from " + cinfo)
             # set now connect
             self.setRuner(cinfo)
@@ -252,22 +259,25 @@ class BTKbService(dbus.service.Object):
         # create and setup our device
         self.device = BTKbDevice(default)
         # start listening for connections
-        self.device.listen()
+        self.device.start()
 
     @dbus.service.method('org.btservice.keyboard', in_signature='yay')
     def send_keys(self, modifier_byte, keys):
-        cmd_str = ""
-        cmd_str += chr(0xA1)
-        cmd_str += chr(0x01)
-        cmd_str += chr(modifier_byte)
-        cmd_str += chr(0x00)
-        count = 0
-        for key_code in keys:
-            if(count < 6):
-                cmd_str += chr(key_code)
-            count += 1
+        try:
+            cmd_str = ""
+            cmd_str += chr(0xA1)
+            cmd_str += chr(0x01)
+            cmd_str += chr(modifier_byte)
+            cmd_str += chr(0x00)
+            count = 0
+            for key_code in keys:
+                if(count < 6):
+                    cmd_str += chr(key_code)
+                count += 1
 
-        self.device.send_string(cmd_str)
+            self.device.send_string(cmd_str)
+        except Exception as e:
+            print(e)
 
     @dbus.service.method('org.btservice.keyboard')
     def relisten(self):
