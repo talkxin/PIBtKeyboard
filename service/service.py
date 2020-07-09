@@ -169,8 +169,9 @@ class BTKbDevice(threading.Thread):
         self.setRuner(cinfo[0])
         print("==============================")
         print("Got a connection on the control channel from " + cinfo[0])
-        self.cinterrupt, cinfo = self.sinterrupt.accept()
-        print("Got a connection on the interrupt channel from " + cinfo[0])
+        self.scontrol.close()
+        self.sinterrupt.close()
+        self.relisten(cinfo[0])
 
     def relisten(self, cinfo):
         try:

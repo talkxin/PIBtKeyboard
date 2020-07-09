@@ -5,7 +5,7 @@ __HOME=/home/pi/PIBtKeyboard/
 #start Bluetooth daemon
 __restartDaemon() {
     /etc/init.d/bluetooth stop
-    /usr/sbin/bluetoothd --nodetach --debug -p time >/dev/null 2>&1
+    /usr/sbin/bluetoothd --nodetach --debug -p time >/dev/null 2>&1 &
     hciconfig hcio up
     #简单配对模式
     hciconfig hci0 sspmode
